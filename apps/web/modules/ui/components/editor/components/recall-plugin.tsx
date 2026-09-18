@@ -19,6 +19,7 @@ import { logger } from "@formbricks/logger";
 import { TSurvey, TSurveyRecallItem } from "@formbricks/types/surveys/types";
 import { getFallbackValues, getRecallItemLabel, getRecallItems } from "@/lib/utils/recall";
 import { RecallItemSelect } from "@/modules/survey/components/element-form-input/components/recall-item-select";
+import { registerRecallFormatCommand } from "./recall-format-command";
 import { $createRecallNode, RecallNode } from "./recall-node";
 
 interface RecallPluginProps {
@@ -365,10 +366,12 @@ export const RecallPlugin = ({
 
   useEffect(() => {
     const removeUpdateListener = editor.registerUpdateListener(handleEditorUpdate);
+    const removeFormatListener = registerRecallFormatCommand(editor);
     const removeKeyListener = editor.registerCommand(KEY_DOWN_COMMAND, handleKeyDown, COMMAND_PRIORITY_HIGH);
 
     return () => {
       removeUpdateListener();
+      removeFormatListener();
       removeKeyListener();
     };
   }, [editor, handleEditorUpdate, handleKeyDown]);
