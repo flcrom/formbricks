@@ -19,6 +19,7 @@ import {
   $getRoot,
   $getSelection,
   $isRangeSelection,
+  $isTextNode,
   FORMAT_TEXT_COMMAND,
   SELECTION_CHANGE_COMMAND,
 } from "lexical";
@@ -45,6 +46,13 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/modules/ui/components/tooltip";
 import { cn } from "@/modules/ui/lib/utils";
 import type { TextEditorProps } from "./editor";
+import {
+  RECALL_FORMAT_BOLD,
+  RECALL_FORMAT_ITALIC,
+  RECALL_FORMAT_UNDERLINE,
+  getToolbarFormatActive,
+} from "./recall-format";
+import { RecallNode } from "./recall-node";
 
 const LowPriority = 1;
 
@@ -230,9 +238,55 @@ export const ToolbarPlugin = (
           setBlockType(type);
         }
       }
-      setIsBold(selection.hasFormat("bold"));
-      setIsItalic(selection.hasFormat("italic"));
-      setIsUnderline(selection.hasFormat("underline"));
+      const selectedRecallNodes = selection
+        .getNodes()
+        .filter((node): node is RecallNode => node instanceof RecallNode);
+      const selectedTextNodes = selection.getNodes().filter($isTextNode);
+      const startPoint = selection.isBackward() ? selection.focus : selection.anchor;
+      const startTextIndex = Math.max(
+        0,
+        selectedTextNodes.findIndex((node) => node.getKey() === startPoint.key)
+      );
+      const textFormats = selectedTextNodes.map((node) => node.getFormat());
+      const textSizes = selectedTextNodes.map((node) => node.getTextContentSize());
+      const startOffset = startPoint.type === "text" ? startPoint.offset : 0;
+      const recallFormats = selectedRecallNodes.map((node) => node.getFormat());
+      setIsBold(
+        getToolbarFormatActive(
+          textFormats,
+          textSizes,
+          startTextIndex,
+          startOffset,
+          recallFormats,
+          RECALL_FORMAT_BOLD,
+          selection.isCollapsed(),
+          selection.hasFormat("bold")
+        )
+      );
+      setIsItalic(
+        getToolbarFormatActive(
+          textFormats,
+          textSizes,
+          startTextIndex,
+          startOffset,
+          recallFormats,
+          RECALL_FORMAT_ITALIC,
+          selection.isCollapsed(),
+          selection.hasFormat("italic")
+        )
+      );
+      setIsUnderline(
+        getToolbarFormatActive(
+          textFormats,
+          textSizes,
+          startTextIndex,
+          startOffset,
+          recallFormats,
+          RECALL_FORMAT_UNDERLINE,
+          selection.isCollapsed(),
+          selection.hasFormat("underline")
+        )
+      );
       const node = getSelectedNode(selection);
       const parent = node.getParent();
       if ($isLinkNode(parent) || $isLinkNode(node)) {
